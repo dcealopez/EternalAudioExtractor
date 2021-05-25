@@ -79,7 +79,7 @@ namespace EternalAudioExtractor
         /// <summary>
         /// Relative path to where the utilities are located
         /// </summary>
-        public const string UtilsRelativePath = ".\\utils";
+        public const string UtilsRelativePath = "utils";
 
         /// <summary>
         /// Entry point
@@ -126,7 +126,7 @@ namespace EternalAudioExtractor
 
             if (AutoConvert)
             {
-                ww2OggPath = Path.Combine(UtilsRelativePath, Ww2OggExeFileName);
+                ww2OggPath = Path.Combine($".{Path.DirectorySeparatorChar}", UtilsRelativePath, Ww2OggExeFileName);
 
                 if (!File.Exists(ww2OggPath))
                 {
