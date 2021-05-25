@@ -179,7 +179,7 @@ namespace EternalAudioExtractor
                 Console.WriteLine($"- Game sound files directory: {gameSoundFilesDirectory}");
                 Console.WriteLine($"- Metadata file path: {metadataFilePath}");
                 Console.WriteLine($"- Output directory: {sndOutputDirectory}");
-                Console.WriteLine($"- Convert to .ogg: {AutoConvert}");
+                Console.WriteLine($"- Convert .wem to .ogg: {AutoConvert}");
                 Console.WriteLine($"- Extract unused: {ExtractUnused}");
                 Console.WriteLine();
 
@@ -349,19 +349,17 @@ namespace EternalAudioExtractor
                         }
 
                         // Determine the file extension by its format
-                        var formatExtension = soundFormat == 2 ? ".ogg" : ".wem";
+                        var formatExtension = soundFormat == 2 ? ".opus" : ".wem";
 
                         // Write the file
                         var outputPath = Path.Combine(sndOutputDirectory, fileName + formatExtension);
                         File.WriteAllBytes(outputPath, soundData);
                         extractedFiles++;
 
-                        // Convert to .ogg if specified
+                        // Convert to .wem to .ogg if specified
                         if (AutoConvert && soundFormat != 2)
                         {
-                            // Convert to .ogg using ww2Ogg
                             var convertedOggPath = Path.Combine(sndOutputDirectory, fileName + ".ogg");
-
                             var ww2OggProcess = new Process();
                             ww2OggProcess.StartInfo.UseShellExecute = false;
                             ww2OggProcess.StartInfo.FileName = ww2OggPath;
