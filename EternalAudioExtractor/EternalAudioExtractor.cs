@@ -421,7 +421,7 @@ namespace EternalAudioExtractor
 
             if (AutoConvert && convertedFiles > 0)
             {
-                Console.WriteLine($"{convertedFiles} extracted sound files were converted to .ogg");
+                Console.WriteLine($"{convertedFiles} extracted .wem sound files were converted to .ogg");
             }
 
             return 0;
