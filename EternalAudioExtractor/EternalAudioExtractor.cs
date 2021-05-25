@@ -406,15 +406,19 @@ namespace EternalAudioExtractor
             {
                 if (unusedFileCount > 0)
                 {
-                    Console.WriteLine($" ({unusedFileCount} unused)");
+                    Console.Write($" ({unusedFileCount} unused)");
                 }
+
+                Console.WriteLine();
             }
             else
             {
                 if (unusedFileCount > 0)
                 {
-                    Console.WriteLine($" ({unusedFileCount} unused files were skipped)");
+                    Console.Write($" ({unusedFileCount} unused files were skipped)");
                 }
+
+                Console.WriteLine();
             }
 
             if (AutoConvert && convertedFiles > 0)
