@@ -419,6 +419,8 @@ namespace EternalAudioExtractor.Wwise
         /// <param name="sections">sections in the paths section</param>
         /// <param name="childIds">the children music object ids of the Music Switch Container</param>
         /// <param name="childrenStartAt">the beginning position of the node's children in all nodes</param>
+        /// <param name="curDepth">the current depth we are at during the node traversal</param>
+        /// <param name="maxDepth">the maximum depth of the section</param>
         /// <returns>a PathElement object</returns>
         private static PathElement ReadPathElement(List<byte[]> sections, uint[] childIds, uint childrenStartAt, uint curDepth, uint maxDepth)
         {
