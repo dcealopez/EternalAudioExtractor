@@ -39,8 +39,11 @@ namespace EternalAudioExtractor.Sound
                 using (var binaryReader = new BinaryReader(fileStream, Encoding.Default, true))
                 {
                     // Skip all the way to the event section
-                    // Skip version
-                    fileStream.Seek(4, SeekOrigin.Begin);
+                    // Read version number. We need this to skip a byte when reading the events
+                    // depending on the version.
+                    int version = binaryReader.ReadInt32();
+                    const int wwiseMetaDataVersionRetail = 23;
+                    bool retailMetaData = version == wwiseMetaDataVersionRetail;
 
                     // Skip pck section
                     int pckCount = binaryReader.ReadInt32();
@@ -189,6 +192,12 @@ namespace EternalAudioExtractor.Sound
                         string eventName = Encoding.UTF8.GetString(nameBytes);
                         binaryReader.ReadSingle();
                         binaryReader.ReadUInt16();
+
+                        if (!retailMetaData)
+                        {
+                            binaryReader.ReadByte();
+                        }
+
                         binaryReader.ReadUInt32();
                         binaryReader.ReadUInt32();
                         uint affectedSoundCount = binaryReader.ReadUInt32();

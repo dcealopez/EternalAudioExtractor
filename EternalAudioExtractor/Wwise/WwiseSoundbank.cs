@@ -224,17 +224,13 @@ namespace EternalAudioExtractor.Wwise
                                     memoryStream.Seek(1, SeekOrigin.Current);
 
                                     // Read child switch/state groups
-                                    uint switchStateGroupChildrenCount = binaryReader.ReadUInt32();
-                                    uint[] childrenIds = new uint[switchStateGroupChildrenCount];
+                                    uint treeDepth = binaryReader.ReadUInt32();
+                                    uint[] childrenIds = new uint[treeDepth];
 
-                                    for (int j = 0; j < switchStateGroupChildrenCount; j++)
+                                    for (int j = 0; j < treeDepth; j++)
                                     {
                                         uint switchStateGroupId = binaryReader.ReadUInt32();
                                         childrenIds[j] = switchStateGroupId;
-                                    }
-
-                                    for (int j = 0; j < switchStateGroupChildrenCount; j++)
-                                    {
                                         byte isStateGroup = binaryReader.ReadByte();
                                         musicSwitchContainer.SwitchOrStateGroupChildren.Add(new Tuple<bool, uint>(isStateGroup == 0x01 ? true : false, childrenIds[j]));
                                     }
@@ -242,7 +238,7 @@ namespace EternalAudioExtractor.Wwise
                                     // Read paths
                                     uint pathSectionLength = binaryReader.ReadUInt32();
                                     memoryStream.Seek(1, SeekOrigin.Current);
-                                    musicSwitchContainer.Paths = ReadPaths(binaryReader, pathSectionLength, musicSwitchContainer.MusicObjectIds.ToArray());
+                                    musicSwitchContainer.Paths = ReadPaths(binaryReader, pathSectionLength, musicSwitchContainer.MusicObjectIds.ToArray(), treeDepth);
 
                                     wwiseSoundbank.MusicSwitchContainers.Add(musicSwitchContainer);
                                 }
@@ -399,8 +395,9 @@ namespace EternalAudioExtractor.Wwise
         /// <param name="reader">binary reader for the soundbank file data memory stream</param>
         /// <param name="pathsSectionLength">length of the paths section</param>
         /// <param name="childIds">the children music object ids of the Music Switch Container</param>
+        /// <param name="maxDepth">the maximum depth of the section</param>
         /// <returns></returns>
-        private static PathNode ReadPaths(BinaryReader reader, uint pathsSectionLength, uint[] childIds)
+        private static PathNode ReadPaths(BinaryReader reader, uint pathsSectionLength, uint[] childIds, uint maxDepth)
         {
             // Read section bytes
             var sectionCount = (int)pathsSectionLength / 12;
@@ -413,7 +410,7 @@ namespace EternalAudioExtractor.Wwise
             }
 
             // Read root node (index 0)
-            return ReadPathElement(sections, childIds, 0) as PathNode;
+            return ReadPathElement(sections, childIds, 0, 0, maxDepth) as PathNode;
         }
 
         /// <summary>
@@ -423,23 +420,26 @@ namespace EternalAudioExtractor.Wwise
         /// <param name="childIds">the children music object ids of the Music Switch Container</param>
         /// <param name="childrenStartAt">the beginning position of the node's children in all nodes</param>
         /// <returns>a PathElement object</returns>
-        private static PathElement ReadPathElement(List<byte[]> sections, uint[] childIds, uint childrenStartAt)
+        private static PathElement ReadPathElement(List<byte[]> sections, uint[] childIds, uint childrenStartAt, uint curDepth, uint maxDepth)
         {
             var section = sections[(int)childrenStartAt];
-            var childId = BitConverter.ToUInt32(section, 4);
 
-            if (childIds.Contains(childId))
+            // This should be reliable enough to check if the current node contains children or not.
+            var uIdx = BitConverter.ToUInt16(section, 4);
+            var uCount = BitConverter.ToUInt16(section, 6);
+            bool isId = uIdx > sections.Count || uCount > sections.Count;
+            bool isMax = curDepth == maxDepth;
+
+            if (isId || isMax)
             {
-                // childId is a Music Object, reached the end
                 var endpoint = new PathEndpoint();
                 endpoint.FromStateOrSwitchId = BitConverter.ToUInt32(section, 0);
-                endpoint.MusicObjectId = childId;
+                endpoint.MusicObjectId = BitConverter.ToUInt32(section, 4);
 
                 return endpoint;
             }
             else
             {
-                // childId is not an Music Object, reached a node
                 var node = new PathNode();
                 node.FromStateOrSwitchId = BitConverter.ToUInt32(section, 0);
                 node.ChildrenStartAtIndex = BitConverter.ToUInt16(section, 4);
@@ -448,7 +448,7 @@ namespace EternalAudioExtractor.Wwise
 
                 for (uint i = 0; i < node.ChildCount; i++)
                 {
-                    node.Children[i] = ReadPathElement(sections, childIds, node.ChildrenStartAtIndex + i);
+                    node.Children[i] = ReadPathElement(sections, childIds, node.ChildrenStartAtIndex + i, ++curDepth, maxDepth);
                 }
 
                 return node;

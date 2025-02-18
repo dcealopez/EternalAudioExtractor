@@ -99,7 +99,7 @@ namespace EternalAudioExtractor
             }
 
             Console.WriteLine("----------------------------------------");
-            Console.WriteLine("| EternalAudioExtractor v1.0 by proteh |");
+            Console.WriteLine("| EternalAudioExtractor v1.1 by proteh |");
             Console.WriteLine("----------------------------------------");
             Console.WriteLine();
 
