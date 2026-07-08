@@ -52,9 +52,8 @@ namespace EternalAudioExtractor.Wwise
                         long currentPos = fileStream.Position;
 
                         // Read the Bnk data, parse it later
-                        byte[] bnkData = new byte[bnkDataLength];
                         fileStream.Seek(bnkBlockSize * bnkBlockNum, SeekOrigin.Begin);
-                        binaryReader.Read(bnkData, 0, (int)bnkDataLength);
+                        byte[] bnkData = binaryReader.ReadBytes((int)bnkDataLength);
                         wwisePackage.SoundbankFilesData.Add(bnkData);
 
                         // Go back to the bnk entry section and continue with the next one
