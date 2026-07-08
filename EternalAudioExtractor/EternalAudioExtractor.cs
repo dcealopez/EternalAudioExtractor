@@ -69,12 +69,12 @@ namespace EternalAudioExtractor
         /// <summary>
         /// Ww2Ogg utility executable file name
         /// </summary>
-        public const string Ww2OggExeFileName = "ww2ogg.exe";
+        public static readonly string Ww2OggExeFileName = OperatingSystem.IsWindows() ? "ww2ogg.exe" : "ww2ogg";
 
         /// <summary>
         /// Revorb utility executable file name
         /// </summary>
-        public const string RevorbExeFileName = "revorb.exe";
+        public static readonly string RevorbExeFileName = OperatingSystem.IsWindows() ? "revorb.exe" : "revorb";
 
         /// <summary>
         /// Relative path to where the utilities are located
@@ -86,12 +86,10 @@ namespace EternalAudioExtractor
         /// </summary>
         public static int Main(string[] args)
         {
-            Console.CursorVisible = false;
-
             // Parse command line arguments
             if (args.Length < 3)
             {
-                Console.WriteLine("USAGE: EternalAudioExtractor.exe <path to the .snd file to extract> <path to the directory containing the 'soundmetadata.bin' file and .pck files> <output folder> [options]");
+                Console.WriteLine("USAGE: EternalAudioExtractor <path to the .snd file to extract> <path to the directory containing the 'soundmetadata.bin' file and .pck files> <output folder> [options]");
                 Console.WriteLine("OPTIONS:");
                 Console.WriteLine("\t-c - Converts .wem files to .ogg automatically (will increase extraction time)");
                 Console.WriteLine("\t-u - Extract unused sounds (the name of these sound files will be their sound id)");
@@ -248,6 +246,15 @@ namespace EternalAudioExtractor
             uint convertedFiles = 0;
             uint unusedFileCount = 0;
 
+            try
+            {
+                Console.CursorVisible = false;
+            }
+            catch (Exception)
+            {
+                // The terminal doesn't support cursor manipulation (e.g. redirected output)
+            }
+
             using (var fileStream = new FileStream(sndFilePath, FileMode.Open, FileAccess.Read))
             {
                 using (var binaryReader = new BinaryReader(fileStream, Encoding.Default, true))
@@ -280,8 +287,7 @@ namespace EternalAudioExtractor
 
                         // Get the sound data
                         fileStream.Seek(soundDataOffset, SeekOrigin.Begin);
-                        byte[] soundData = new byte[encodedSize];
-                        binaryReader.Read(soundData, 0, (int)encodedSize);
+                        byte[] soundData = binaryReader.ReadBytes((int)encodedSize);
 
                         // Empty files are considered unused
                         if (soundData.Length == 0)
@@ -370,21 +376,32 @@ namespace EternalAudioExtractor
                             ww2OggProcess.Start();
                             ww2OggProcess.WaitForExit();
 
-                            // Revorb the .ogg file
-                            var revorbProcess = new Process();
-                            revorbProcess.StartInfo.UseShellExecute = false;
-                            revorbProcess.StartInfo.FileName = revorbPath;
-                            revorbProcess.StartInfo.Arguments = $"\"{convertedOggPath}\"";
-                            revorbProcess.StartInfo.RedirectStandardError = true;
-                            revorbProcess.StartInfo.RedirectStandardOutput = true;
-                            revorbProcess.StartInfo.CreateNoWindow = false;
-                            revorbProcess.Start();
-                            revorbProcess.WaitForExit();
+                            if (ww2OggProcess.ExitCode == 0)
+                            {
+                                // Revorb the .ogg file
+                                var revorbProcess = new Process();
+                                revorbProcess.StartInfo.UseShellExecute = false;
+                                revorbProcess.StartInfo.FileName = revorbPath;
+                                revorbProcess.StartInfo.Arguments = $"\"{convertedOggPath}\"";
+                                revorbProcess.StartInfo.RedirectStandardError = true;
+                                revorbProcess.StartInfo.RedirectStandardOutput = true;
+                                revorbProcess.StartInfo.CreateNoWindow = false;
+                                revorbProcess.Start();
+                                revorbProcess.WaitForExit();
 
-                            // Delete the .wem file
-                            File.Delete(outputPath);
+                                // Delete the .wem file
+                                File.Delete(outputPath);
 
-                            convertedFiles++;
+                                convertedFiles++;
+                            }
+                            else
+                            {
+                                // Conversion failed; keep the .wem file and discard any partial .ogg
+                                if (File.Exists(convertedOggPath))
+                                {
+                                    File.Delete(convertedOggPath);
+                                }
+                            }
                         }
 
                         // Continue with the next file
@@ -396,6 +413,16 @@ namespace EternalAudioExtractor
             }
 
             Console.WriteLine($"\r* Extracting... [100%]\t\t");
+
+            try
+            {
+                Console.CursorVisible = true;
+            }
+            catch (Exception)
+            {
+                // The terminal doesn't support cursor manipulation (e.g. redirected output)
+            }
+
             Console.WriteLine();
             Console.WriteLine($"Finished in {stopwatch.Elapsed} seconds.");
             Console.Write($"{extractedFiles} sound files were extracted");
